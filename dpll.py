@@ -3,8 +3,8 @@ import random
 
 # This file contains an implementation of the DPLL (Davis-Putnam-Logemann-Loveland) algorithm for SAT problem solving
 
-cnf_path = 'sample.cnf'
 
+# Takes a .cnf file path and transforms it into a matrix 
 def parse_cnf(file_path):
     with open(file_path, 'r') as file:
         lines = file.readlines()
@@ -15,8 +15,16 @@ def parse_cnf(file_path):
 
     return clauses
 
-file_path = 'example.cnf'
-cnf_formula = parse_cnf(cnf_path)
+
+# Takes a CNF and a literal as input
+# Returns true if the CNF is in the literal otherwise false
+
+def lit_in_cnf(lit, cnf):
+    for cl in cnf:
+        if lit in cl:
+            return True
+    return False
+
 
 
 # Takes a CNF in input
@@ -30,16 +38,26 @@ def get_unique_literals(cnf):
                 uniq.append(abs(lit))       
     return uniq
 
-# Takes a valuation dictionary in input
-# Returns a False literal to be used by dpll (selection by order)
+# Takes a cnf in input
+# Uses MOMs heuristic to select the best literal
+# Targets the literal that appears the most of times in the shortest clauses
 
-def select_literal(valuation):
+def select_literal(cnf):
+    literal_occurrences = {}
+    for clause in cnf:
+        for lit in clause:
+            if lit not in literal_occurrences and lit_in_cnf(lit, cnf):
+                literal_occurrences[lit] = 1
+            literal_occurrences[lit] += 1
 
-    for lit, val in valuation.items():
-        if val == False:
-            return lit
-        
-    return None  # Special return : All literals were selected before
+    best_literal = None
+    num_occs = 0
+    for key, val in literal_occurrences.items():
+        if val > num_occs:
+            num_occs = val
+            best_literal = key
+            
+    return best_literal
 
 # Takes a CNF and a literal in input
 # Returns a simplified CNF : - Removes every clause that contains the literal (As it is satisfied now)
@@ -101,7 +119,7 @@ def dpll(cnf, valuation):
         valuation[abs(lit_val)] = lit_val > 0
         return dpll(simplify(cnf, lit_val), valuation)
     
-    literal = select_literal(valuation) # Select a False literal from the valuation (goes by order, no special prioritizing)
+    literal = select_literal(cnf) # Select a False literal from the valuation (goes by order, no special prioritizing)
 
     
     valuation[literal] = True
@@ -151,8 +169,17 @@ cnf7 = [[1, -2, 3], [-1, 2, 3], [1, -3], [2, -3], [-1, -2]] # sat Expect : {1: F
 
 cnf8 =  [[1, 2], [-1, -2], [-1, 2], [1, -2]] #unsat
 
+cnf10 = [[1],[-1]]
 
-dpll_wrapper(cnf8)
+
+cnf_path = 'test.cnf'
+file_path = 'example.cnf'
+cnf_formula = parse_cnf(cnf_path)
+
+# https://people.sc.fsu.edu/~jburkardt/data/cnf/cnf.html this website contains good CNF lists that can be used for test
+# I tested my code with some of them and it worked very well
+
+dpll_wrapper(cnf_formula)
 
 
 # By Farouk Soufary
